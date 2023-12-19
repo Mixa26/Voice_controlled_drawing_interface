@@ -5,83 +5,105 @@ import librosa
 import random
 import keras
 import soundfile as sf
+import threading
 
-shape = None
-color = None
-available_colors = ['blue', 'green', 'red', 'yellow']
-canvas = None
-voice_command = []
-is_recording = False
+class AudioRecorded:
+    def __init__(self):
+        self.recording = False
+        self.frames = []
+    
+    def start_recording(self):
+        self.recording = True
+        self.frames = []
+        sd.default.samplerate = 44100
+        sd.default.channels = 1
 
-model = keras.models.load_model('model.h5')
+        def callback(indata, framse, time, status):
+            if self.recording:
+                self.frames.append(indata.copy())
 
-def draw_shapes(command):
+        with sd.InputStream(callback=callback):
+            sd.sleep(1000 * 2)
+            self.stop_recording()
+    
+    def stop_recording(self):
+        self.recording = False
+    
+    def save_recording(self, filename):
+        if self.frames:
+            audio_data = np.concatenate(self.frames, axis=0)
+            sf.write(filename, audio_data, samplerate=44100)
 
-    if command == 0:
-        clear_screen()
-    elif command == 1:
-        shape = 1
-        canvas.create_oval(200, 50, 300, 150, fill=color, outline="black")
-        color = None
-    elif command == 2:
-        shape = 2
-        canvas.create_rectangle(350, 50, 450, 150, fill=color, outline="black")
-        color = None
-    elif command == 3:
-        clear_screen()
-        color = available_colors[random.randint(len(available_colors))]
-        draw_shapes(shape)
-    else:
-        shape = 4
-        canvas.create_polygon(50, 150, 150, 150, 100, 50, fill=color, outline="black")
-        color = None
+class VoiceCommandApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Voice commander")
+        self.command = None
+        self.commands = ['izbrisi', 'krug', 'kvadrat', 'oboji', 'trougao']
+        self.shape = None
+        self.color = 'white'
+        self.available_colors = ['blue', 'green', 'red', 'yellow']
+        self.model = keras.models.load_model('model.h5')
 
+        self.canvas = tk.Canvas(self.root, width=400, height=200, bg="white")
+        self.canvas.pack(pady=10)
 
-def clear_screen():
-    canvas.delete("all")
+        self.recorder = AudioRecorded()
 
-def start_audio_capture():
-    global voice_command, is_recording
-    voice_command = []
-    is_recording = True
-    stream = sd.InputStream(callback=audio_callback)
-    stream.start()
+        self.start_button = tk.Button(root, text="Voice command", command=self.start_recording)
+        self.start_button.pack(side=['left'], pady=10, padx=50)
 
-def stop_audio_capture():
-    global is_recording
-    is_recording = False
-    audio = np.concatenate(voice_command, axis=0)
-    #audio = np.concatenate(audio, axis=0)
-    sf.write("record.wav", audio, 44100)
-    librosa.load("record.wav")
-    print('majmune')
-    #print(a[0])
-    #librosa.feature.mfcc(y=a[0])
-    #mfcc = extract_mfcc(a[0])[:,:80]
-    #print(mfcc)
-    #command = np.argmax(model.predict(np.expand_dims(mfcc), axis=0))
+    def start_recording(self):
+        self.recording_thread = threading.Thread(target=self.recorder.start_recording)
+        self.recording_thread.start()
 
+        self.root.after(2000, self.stop_recording)
 
-def audio_callback(indata, frames, time, status):
-    if status:
-        print('Error:', status)
-    if is_recording:
-        voice_command.append(indata.copy())
+    def stop_recording(self):
+        self.recorder.stop_recording()
+        self.recording_thread.join()
+        self.recorder.save_recording('record.wav')
+        mfcc = librosa.feature.mfcc(y=np.squeeze(np.concatenate(self.recorder.frames)), sr=44100, n_mfcc=13, n_fft=2048, hop_length=512)
+        prediction = self.model.predict(np.expand_dims(mfcc[:,:62], axis=0))
+        print("Predictions for\n", self.commands)
+        print(prediction)                                        
+        command = np.argmax(prediction)
+        print("Predicted command: ", self.commands[command])
+        self.draw_shapes(command)
 
-def extract_mfcc(audio, n_mfcc=13, n_fft=2048, hop_length=512):
-    mfccs = librosa.feature.mfcc(y=audio, sr=None, n_mfcc=n_mfcc, n_fft=n_fft, hop_length=hop_length)
-    return mfccs
+    def draw_shapes(self, command):
+        if command == 0:
+            self.clear_screen()
+            self.shape = None
+            self.color = 'white'
+        elif command == 1:
+            self.clear_screen()
+            self.shape = 1
+            self.canvas.create_oval(150, 50, 250, 150, fill=self.color, outline="black")
+            self.color = 'white'
+        elif command == 2:
+            self.clear_screen()
+            self.shape = 2
+            self.canvas.create_rectangle(150, 50, 250, 150, fill=self.color, outline="black")
+            self.color = 'white'
+        elif command == 3:
+            self.clear_screen()
+            self.color = self.available_colors[random.randint(0, len(self.available_colors)-1)]
+            if self.shape != None:
+                self.draw_shapes(self.shape)
+            else:
+                self.color = 'white'
+        else:
+            self.clear_screen()
+            self.shape = 4
+            self.canvas.create_polygon(150, 150, 250, 150, 200, 50, fill=self.color, outline="black")
+            self.color = 'white'
 
-root = tk.Tk()
-root.title("Voice application demo")
+    def clear_screen(self):
+        self.canvas.delete("all")
 
-canvas = tk.Canvas(root, width=500, height=300)
-canvas.pack()
-
-start_button = tk.Button(root, text="Start Recording", command=start_audio_capture)
-start_button.pack(side=tk.LEFT, padx=10, pady=10)
-
-stop_button = tk.Button(root, text="Stop Recording", command=stop_audio_capture)
-stop_button.pack(side=tk.RIGHT, padx=10, pady=10)
-
-root.mainloop()
+if __name__ == "__main__":
+    root = tk.Tk()
+    root.geometry("500x300")
+    app = VoiceCommandApp(root)
+    root.mainloop()
