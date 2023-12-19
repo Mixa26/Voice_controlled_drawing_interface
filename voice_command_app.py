@@ -62,9 +62,9 @@ class VoiceCommandApp:
     def stop_recording(self):
         self.recorder.stop_recording()
         self.recording_thread.join()
-        self.recorder.save_recording('record.wav')
+        #self.recorder.save_recording('record.wav')
         mfcc = librosa.feature.mfcc(y=np.squeeze(np.concatenate(self.recorder.frames)), sr=44100, n_mfcc=13, n_fft=2048, hop_length=512)
-        prediction = self.model.predict(np.expand_dims(mfcc[:,:62], axis=0))
+        prediction = self.model.predict(np.expand_dims(mfcc[:,:80], axis=0))
         print("Predictions for\n", self.commands)
         print(prediction)                                        
         command = np.argmax(prediction)
