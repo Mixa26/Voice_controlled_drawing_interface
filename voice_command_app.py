@@ -6,6 +6,8 @@ import random
 import keras
 import soundfile as sf
 import threading
+from tensorflow import keras
+from keras.layers import Dense
 
 class AudioRecorded:
     def __init__(self):
@@ -39,7 +41,7 @@ class VoiceCommandApp:
         self.root = root
         self.root.title("Voice commander")
         self.command = None
-        self.commands = ['izbrisi', 'krug', 'kvadrat', 'oboji', 'trougao']
+        self.commands = ['izbrisi', 'krug', 'kvadrat', 'oboji', 'trougao', 'povecaj']
         self.shape = None
         self.color = 'white'
         self.available_colors = ['blue', 'green', 'red', 'yellow']
@@ -52,6 +54,12 @@ class VoiceCommandApp:
 
         self.start_button = tk.Button(root, text="Voice command", command=self.start_recording)
         self.start_button.pack(side=['left'], pady=10, padx=50)
+
+        self.label = tk.Label(root, text='')
+        self.label.pack(side=['left'], pady=10, padx=10)
+
+        self.start_button = tk.Button(root, text="Train increase", command=self.start_train_recording)
+        self.start_button.pack(side=['right'], pady=10, padx=50)
 
     def start_recording(self):
         self.recording_thread = threading.Thread(target=self.recorder.start_recording)
@@ -70,6 +78,29 @@ class VoiceCommandApp:
         command = np.argmax(prediction)
         print("Predicted command: ", self.commands[command])
         self.draw_shapes(command)
+    
+    def start_train_recording(self):
+        self.recording_thread = threading.Thread(target=self.recorder.start_recording)
+        self.recording_thread.start()
+
+        self.label.config(text='Training model')
+        self.root.after(2000, self.train_increase_voice_command)
+
+    def train_increase_voice_command(self):
+        #Preprocess the new data before we can feed it to the model
+        mfcc = librosa.feature.mfcc(y=np.squeeze(np.concatenate(self.recorder.frames)), sr=44100, n_mfcc=13, n_fft=2048, hop_length=512)[:,:80]
+        mfcc = np.expand_dims(mfcc, axis=0)
+        
+        #Train the model with the new command
+        self.model.pop()
+
+        self.model.add(Dense(6, activation='softmax'))
+        
+        self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+        self.model.fit(mfcc, np.array([[0, 0, 0, 0, 0, 1]]), epochs=2)
+
+        self.label.config(text='Done')
 
     def draw_shapes(self, command):
         if command == 0:
@@ -93,11 +124,18 @@ class VoiceCommandApp:
                 self.draw_shapes(self.shape)
             else:
                 self.color = 'white'
-        else:
+        elif command == 4:
             self.clear_screen()
             self.shape = 4
             self.canvas.create_polygon(150, 150, 250, 150, 200, 50, fill=self.color, outline="black")
             self.color = 'white'
+        else:
+            if self.shape == 1:
+                self.canvas.create_oval(100, 30, 300, 170, fill=self.color, outline="black")
+            elif self.shape == 2:
+                self.canvas.create_rectangle(100, 30, 300, 170, fill=self.color, outline="black")
+            elif self.shape == 4:
+                self.canvas.create_polygon(100, 170, 300, 170, 200, 30, fill=self.color, outline="black")
 
     def clear_screen(self):
         self.canvas.delete("all")
