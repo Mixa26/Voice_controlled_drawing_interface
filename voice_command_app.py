@@ -41,7 +41,8 @@ class VoiceCommandApp:
         self.root = root
         self.root.title("Voice commander")
         self.command = None
-        self.commands = ['izbrisi', 'krug', 'kvadrat', 'oboji', 'trougao', 'povecaj']
+        self.commands = ['izbrisi', 'krug', 'kvadrat', 'oboji', 'trougao']
+        self.commands_eng = ['clear', 'circle', 'square', 'color', 'triangle']
         self.shape = None
         self.color = 'white'
         self.available_colors = ['blue', 'green', 'red', 'yellow']
@@ -56,9 +57,9 @@ class VoiceCommandApp:
         self.start_button.pack(side=['left'], pady=10, padx=50)
 
         self.label = tk.Label(root, text='')
-        self.label.pack(side=['left'], pady=10, padx=10)
+        self.label.pack(side=['left'], pady=2, padx=1)
 
-        self.start_button = tk.Button(root, text="Train increase", command=self.start_train_recording)
+        self.start_button = tk.Button(root, text="Train 'increase'", command=self.start_train_recording)
         self.start_button.pack(side=['right'], pady=10, padx=50)
 
     def start_recording(self):
@@ -77,6 +78,7 @@ class VoiceCommandApp:
         print(prediction)                                        
         command = np.argmax(prediction)
         print("Predicted command: ", self.commands[command])
+        self.label.config(text=('Command: ' + self.commands_eng[command]))
         self.draw_shapes(command)
     
     def start_train_recording(self):
@@ -98,38 +100,45 @@ class VoiceCommandApp:
         
         self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-        self.model.fit(mfcc, np.array([[0, 0, 0, 0, 0, 1]]), epochs=2)
+        self.model.fit(mfcc, np.array([[0, 0, 0, 0, 0, 1]]), epochs=1)
+
+        self.commands.append('povecaj')
+        self.commands_eng.append('increase')
 
         self.label.config(text='Done')
 
-    def draw_shapes(self, command):
+    def draw_shapes(self, command, clear_color=True):
         if command == 0:
             self.clear_screen()
             self.shape = None
             self.color = 'white'
         elif command == 1:
+            if clear_color:
+                self.color = 'white'
             self.clear_screen()
             self.shape = 1
             self.canvas.create_oval(150, 50, 250, 150, fill=self.color, outline="black")
-            self.color = 'white'
         elif command == 2:
+            if clear_color:
+                self.color = 'white'
             self.clear_screen()
             self.shape = 2
             self.canvas.create_rectangle(150, 50, 250, 150, fill=self.color, outline="black")
-            self.color = 'white'
         elif command == 3:
             self.clear_screen()
             self.color = self.available_colors[random.randint(0, len(self.available_colors)-1)]
             if self.shape != None:
-                self.draw_shapes(self.shape)
+                self.draw_shapes(self.shape, clear_color=False)
             else:
                 self.color = 'white'
         elif command == 4:
+            if clear_color:
+                self.color = 'white'
             self.clear_screen()
             self.shape = 4
             self.canvas.create_polygon(150, 150, 250, 150, 200, 50, fill=self.color, outline="black")
-            self.color = 'white'
         else:
+            self.clear_screen()
             if self.shape == 1:
                 self.canvas.create_oval(100, 30, 300, 170, fill=self.color, outline="black")
             elif self.shape == 2:
