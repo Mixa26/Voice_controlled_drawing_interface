@@ -2,6 +2,10 @@
 
 A deep neural network that recognizes voice commands embedded into a small user interface.<br>
 
+### Demo of the app
+
+![demo](pictures/demo.mp4)
+
 # Run the app
 To run the program just download the "model.h5" and "voice_command_app.py" in the same directory.<br>
 Navigate to that directory with CMD (for windows or equivalent for your OS) and run the program with the command:<br>
