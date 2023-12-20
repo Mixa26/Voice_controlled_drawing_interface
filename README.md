@@ -4,7 +4,11 @@ A deep neural network that recognizes voice commands embedded into a small user 
 
 ### Demo of the app
 
-![demo](pictures/demo.mp4)
+
+
+https://github.com/Mixa26/Voice_controlled_drawing_interface/assets/71144280/5c0c0557-146c-4551-9b2f-bb39057f7170
+
+
 
 # Run the app
 To run the program just download the "model.h5" and "voice_command_app.py" in the same directory.<br>
