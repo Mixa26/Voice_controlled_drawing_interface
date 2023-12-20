@@ -2,6 +2,11 @@
 
 A deep neural network that recognizes voice commands embedded into a small user interface.<br>
 
+# Run the app
+To run the program just download the "model.h5" and "voice_command_app.py" in the same directory.<br>
+Navigate to that directory with CMD (for windows or equivalent for your OS) and run the program with the command:<br>
+"python voice_command_app.py"
+
 # App possibilities
 
 There are 5 default controlls ['izbrisi', 'krug', 'kvadrat', 'oboji', 'trougao'](in serbian) or ['clear', 'circle', 'square', 'color', 'triangle'](translation).<br>
