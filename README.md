@@ -33,3 +33,11 @@ on you own voice.
 ### "Clear"
 
 ![clear](pictures/clear.jpg)
+
+A added function is the "Train 'increase'" which lets the user train the model to pronunciation of the word 'increase' or 'povecaj'.<br>
+What it does is makes the shape of the currently displayed shape bigger. The accuracy of the model can't be guaranteed after training<br>
+since the weights of the model changed.
+
+## "Increase"
+
+![increase](pictures/increase.jpg)
